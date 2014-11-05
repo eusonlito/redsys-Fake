@@ -1,0 +1,21 @@
+{
+    "name": "redsys/fake",
+    "keywords": ["fake", "server", "tpv", "redsys", "sermepa", "servired"],
+    "description": "Fake TPV server to test Redsys/Sermepa/Servired payments",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Lito",
+            "email": "lito@eordes.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Redsys\\Fake\\": "src/Redsys/Fake/"
+        }
+    },
+    "minimum-stability": "stable"
+}
