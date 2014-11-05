@@ -21,12 +21,13 @@
     <body>
         <div class="page-header">
             <div class="container">
-                <img src="images/redsys.png" />
+                <img src="images/redsys.png" alt="RedSys" />
+                <h1 class="pull-right">Redsys Fake Server</h1>
             </div>
         </div>
 
         <div class="container">
-            <?= $body; ?>
+            <?php require __DIR__.'/response.php'; ?>
         </div>
 
         <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>

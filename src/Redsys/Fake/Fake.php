@@ -6,104 +6,218 @@ use Exception;
 class Fake
 {
     private $options = array();
+    private $messages = array();
+
+    private $signature_fields_check = array('Amount', 'Order', 'MerchantCode', 'Currency', 'TransactionType', 'MerchantURL');
+    private $signature_fields_new = array('Amount', 'Order', 'MerchantCode', 'Currency', 'Response');
 
     private $option_prefix = 'Ds_Merchant_';
 
-    private $o_required = array('Environment', 'Currency', 'Terminal', 'ConsumerLanguage', 'MerchantCode', 'Key', 'MerchantName', 'Titular');
-    private $o_optional = array('UrlOK', 'UrlKO', 'TransactionType', 'MerchantURL');
-
-    private $values = array();
-    private $hidden = array();
+    private $success = '';
+    private $error = '';
 
     public function __construct(array $options)
     {
-        return $this->setOption($options);
-    }
-
-    public function setOption($option, $value = null)
-    {
-        if (is_array($option)) {
-            $options = $option;
-        } elseif ($value !== null) {
-            $options = array($option => $value);
-        } else {
-            throw new Exception(sprintf('Option <strong>%s</strong> can not be empty', $option));
-        }
-
-        $options = array_merge($this->options, $options);
-
-        foreach ($this->o_required as $option) {
-            if (empty($options[$option])) {
-                throw new Exception(sprintf('Option <strong>%s</strong> is required', $option));
-            }
-
-            $this->options[$option] = $options[$option];
-        }
-
-        foreach ($this->o_optional as $option) {
-            if (array_key_exists($option, $options)) {
-                $this->options[$option] = $options[$option];
-            }
-        }
-
-        $this->setEnvironment($options['Environment']);
+        $this->setOption($options);
+        $this->loadMessages();
 
         return $this;
     }
 
-    public function getOption($key = null)
+    public function setOption($option, $value = null)
     {
-        return $key ? $this->options[$key] : $this->options;
+        if (is_string($option)) {
+            $option = [$option => $value];
+        }
+
+        $this->options = array_merge($this->options, $option);
+
+        if (empty($this->options['Key'])) {
+            throw new Exception(sprintf('Option <strong>%s</strong> can not be empty', 'Key'));
+        }
+
+        return $this;
     }
 
-    public function getSignature()
+    public function getOption($key = null, $default = '')
     {
+        if (empty($key)) {
+            return $this->options;
+        } elseif (array_key_exists($key, $this->options)) {
+            return $this->options[$key];
+        } else {
+            return $default;
+        }
+    }
+
+    public function getError()
+    {
+        return $this->error;
+    }
+
+    public function getMessages($exp = '')
+    {
+        if (empty($exp)) {
+            return $this->messages;
+        }
+
+        $exp = str_replace('/', '\\/', $exp);
+
+        return array_filter($this->messages, function ($value) use ($exp) {
+            return preg_match('/'.$exp.'/', $value['code']);
+        });
+    }
+
+    public function getSuccess()
+    {
+        return $this->success;
+    }
+
+    private function loadMessages()
+    {
+        $files = glob(__DIR__.'/Messages/*.php');
+
+        foreach ($files as $file) {
+            $this->messages = array_merge($this->messages, require $file);
+        }
+
+        return $this;
+    }
+
+    private function setErrorCode($code)
+    {
+        if (empty($message = $this->messages[$code])) {
+            throw new Exception(sprintf('Error code <strong>%s</strong> not defined', $code));
+        }
+
+        $msg = $this->messages[$message['msg']];
+
+        $this->setError(sprintf('[%s] %s [%s %s]', $message['code'], $message['message'], $message['msg'], $msg));
+    }
+
+    private function setError($msg)
+    {
+        throw $this->error = new Exception($msg);
+    }
+
+    public function loadFromUrl()
+    {
+        $path = basename(preg_replace('#/$#', '', getenv('REQUEST_URI')));
+
+        if (!$this->isValidPath($path)) {
+            $this->setError(sprintf('URL "%s" is not valid'), getenv('REQUEST_URI'));
+
+            return $this;
+        }
+
+        try {
+            $this->$path();
+        } catch (Exception $e) {}
+
+        return $this;
+    }
+
+    private function isValidPath($path)
+    {
+        return in_array($path, array('realizarPago'), true);
+    }
+
+    private function realizarPago()
+    {
+        if (isset($_POST['action'])) {
+            return $this->realizarPagoResponse();
+        }
+
+        if ($this->checkSignature($_POST) === true) {
+            $this->success = 'Valid signature';
+        } else {
+            $this->setErrorCode('SIS0041');
+        }
+    }
+
+    private function realizarPagoResponse()
+    {
+        $success = ($_POST['action'] === 'success');
+        $Merchant_Url = $_POST['Ds_Merchant_Url'.($success ? 'OK' : 'KO')];
+
+        if (empty($_POST['Ds_Merchant_MerchantURL'])) {
+            die(header('Location: '.$Merchant_Url));
+        }
+
+        $Curl = new Curl(array(
+            'debug' => true,
+            'base' => $_POST['Ds_Merchant_MerchantURL']
+        ));
+
+        $_POST['Ds_Merchant_Response'] = sprintf('%04d', $_POST['Ds_Response']);
+
+        $post = array(
+            'DS_Date' => date('d/m/Y'),
+            'DS_Hour' => date('H:i'),
+            'Ds_SecurePayment' => $this->getOption('SecurePayment', '0'),
+            'Ds_Card_Country' => $this->getOption('Card_Country', '724'),
+            'Ds_Amount' => $_POST['Ds_Merchant_Amount'],
+            'Ds_Currency' => $_POST['Ds_Merchant_Currency'],
+            'Ds_Order' => $_POST['Ds_Merchant_Order'],
+            'Ds_MerchantCode' => $_POST['Ds_Merchant_MerchantCode'],
+            'Ds_Terminal' => sprintf('%03d', $_POST['Ds_Merchant_Terminal']),
+            'Ds_Signature' => $this->getSignature('new', $_POST),
+            'Ds_Response' => $_POST['Ds_Merchant_Response'],
+            'Ds_MerchantData' => $_POST['Ds_Merchant_MerchantData'],
+            'Ds_TransactionType' => $_POST['Ds_Merchant_TransactionType'],
+            'Ds_ConsumerLanguage' => (int)$_POST['Ds_Merchant_ConsumerLanguage'],
+            'Ds_AuthorisationCode' => ($success ? mt_rand(100000, 999999) : '')
+        );
+
+        if ($success === false) {
+            $post['Ds_ErrorCode'] = $_POST['Ds_ErrorCode'];
+        }
+
+        $Curl->post('', array(), $post);
+
+        die(header('Location: '.$Merchant_Url));
+    }
+
+    private function getSignature($type, $values)
+    {
+        if (!in_array($type, array('check', 'new'), true)) {
+            $this->setError(sprintf('Signature type <strong>%s</strong> is not valid', $type));
+        }
+
+        $fields = ($type === 'check') ? $this->signature_fields_check : $this->signature_fields_new;
         $prefix = $this->option_prefix;
-        $fields = array('Amount', 'Order', 'MerchantCode', 'Currency', 'TransactionType', 'MerchantURL');
+
+        if (empty($values[$prefix.'Amount'])) {
+            $this->setErrorCode('SIS0018');
+        } elseif (empty($values[$prefix.'Order'])) {
+            $this->setErrorCode('SIS0074');
+        } elseif (empty($values[$prefix.'MerchantCode'])) {
+            $this->setErrorCode('SIS0008');
+        } elseif (empty($values[$prefix.'Currency'])) {
+            $this->setErrorCode('SIS0015');
+        } elseif (!in_array($values[$prefix.'TransactionType'], array('0', '1', '2', '3', '7', '8', '9'))) {
+            $this->setErrorCode('SIS0023');
+        }
+
         $key = '';
 
         foreach ($fields as $field) {
-            if (!isset($this->values[$prefix.$field])) {
-                throw new Exception(sprintf('Field <strong>%s</strong> is empty and is required to create signature key', $field));
-            }
-
-            $key .= $this->values[$prefix.$field];
+            $key .= $values[$prefix.$field];
         }
 
         return strtoupper(sha1($key.$this->options['Key']));
     }
 
-    public function checkTransaction(array $post)
+    private function checkSignature($data)
     {
-        $prefix = 'Ds_';
+        $field = $this->option_prefix.'MerchantSignature';
 
-        if (empty($post) || empty($post[$prefix.'Signature'])) {
-            throw new Exception('_POST data is empty');
+        if (empty($data[$field])) {
+            return $this->setErrorCode('SIS0020');
         }
 
-        $fields = array('Amount', 'Order', 'MerchantCode', 'Currency', 'Response');
-        $key = '';
+        $signature = $this->getSignature('check', $data);
 
-        foreach ($fields as $field) {
-            if (empty($post[$prefix.$field])) {
-                throw new Exception(sprintf('Field <strong>%s</strong> is empty and is required to verify transaction'));
-            }
-
-            $key .= $post[$prefix.$field];
-        }
-
-        $signature = strtoupper(sha1($key.$this->options['Key']));
-
-        if ($signature !== $post[$prefix.'Signature']) {
-            throw new Exception(sprintf('Signature not valid (%s != %s)', $signature, $post[$prefix.'Signature']));
-        }
-
-        $response = (int)$post[$prefix.'Response'];
-
-        if (($response >= 100) && ($response !== 900)) {
-            throw new Exception(sprintf('Transaction error. Code: <strong>%s</strong>', $post[$prefix.'Response']));
-        }
-
-        return $post[$prefix.'Signature'];
+        return ($signature === $data[$field]);
     }
 }
