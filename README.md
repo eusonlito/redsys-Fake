@@ -7,13 +7,13 @@ Esta utilidad te permitirá crear tu propio servicio de pagos y validación de c
 
 Instala la aplicación en un directorio accesible vía web. Te recomiendo crear el entorno bajo un subdominio propio (o un alias) para poder recibir peticiones para todos los entornos que necesites probar.
 
-````bash
+```bash
 git clone https://github.com/eusonlito/redsys-Fake.git /var/www/redsys-fake
-````
+```
 
 Configura el acceso en Apache o Nginx
 
-````
+```
 <VirtualHost *:80>
   ServerName redsys-fake.mydomain.com
 
@@ -27,7 +27,7 @@ Configura el acceso en Apache o Nginx
     AllowOverride all
   </Directory>
 </VirtualHost>
-````
+```
 
 ## Integración
 
@@ -39,7 +39,7 @@ Crea un duplicado del fichero `config.php` como `config.local.php`.
 
 Configura el fichero con los parámetros necesarios:
 
-````php
+```php
 return array(
     // Signature Key
     'Key' => 'qwertyasdf0123456789',
@@ -50,7 +50,7 @@ return array(
         'password' => ''
     )
 );
-````
+```
 
 Ahora ya puedes enviar las peticiones a eses entorno como si fuera el entorno real.
 
@@ -69,6 +69,6 @@ $TPV = new Redsys\Tpv\Tpv(array(
 
     ....
 ));
-````
+```
 
 Listo!
