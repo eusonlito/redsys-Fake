@@ -105,7 +105,7 @@ class Fake
         $path = basename(preg_replace('#/$#', '', getenv('REQUEST_URI')));
 
         if (!$this->isValidPath($path)) {
-            $this->setError(sprintf('URL "%s" is not valid'), getenv('REQUEST_URI'));
+            $this->setError(sprintf('URL "%s" is not valid', getenv('REQUEST_URI')));
 
             return $this;
         }
