@@ -95,9 +95,15 @@ class Fake
         $this->setError(sprintf('[%s] %s [%s %s]', $message['code'], $message['message'], $message['msg'], $msg));
     }
 
-    private function setError($msg)
+    private function setError($msg, $throw = true)
     {
-        throw $this->error = new Exception($msg);
+        $this->error = new Exception($msg);
+
+        if ($throw) {
+            throw $this->error;
+        }
+
+        return $this;
     }
 
     public function loadFromUrl()
@@ -105,9 +111,7 @@ class Fake
         $path = basename(preg_replace('#/$#', '', getenv('REQUEST_URI')));
 
         if (!$this->isValidPath($path)) {
-            $this->setError(sprintf('URL "%s" is not valid', getenv('REQUEST_URI')));
-
-            return $this;
+            return $this->setError(sprintf('URL "%s" is not valid', getenv('REQUEST_URI')), false);
         }
 
         try {
