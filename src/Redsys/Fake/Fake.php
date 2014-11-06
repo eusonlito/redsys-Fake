@@ -149,6 +149,10 @@ class Fake
             'base' => $_POST['Ds_Merchant_MerchantURL']
         ));
 
+        if ($auth = $this->getOption('basic_auth') && $auth['user'] && $auth['password']) {
+            $Curl->setHeader(CURLOPT_USERPWD, $auth['user'].':'.$auth['password']);
+        }
+
         $_POST['Ds_Merchant_Response'] = sprintf('%04d', $_POST['Ds_Response']);
 
         $post = array(
