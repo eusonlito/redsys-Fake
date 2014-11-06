@@ -27,7 +27,7 @@ class Fake
     public function setOption($option, $value = null)
     {
         if (is_string($option)) {
-            $option = [$option => $value];
+            $option = array($option => $value);
         }
 
         $this->options = array_merge($this->options, $option);
@@ -173,7 +173,7 @@ class Fake
             'Ds_Response' => $_POST['Ds_Merchant_Response'],
             'Ds_MerchantData' => $_POST['Ds_Merchant_MerchantData'],
             'Ds_TransactionType' => $_POST['Ds_Merchant_TransactionType'],
-            'Ds_ConsumerLanguage' => (int)$_POST['Ds_Merchant_ConsumerLanguage'],
+            'Ds_ConsumerLanguage' => (int) $_POST['Ds_Merchant_ConsumerLanguage'],
             'Ds_AuthorisationCode' => ($success ? mt_rand(100000, 999999) : '')
         );
 
