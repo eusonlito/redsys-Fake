@@ -65,7 +65,7 @@ $TPV = new Redsys\Tpv\Tpv(array(
     ),
 
     'Environment' => 'local',
-    'Key' => 'asdfghjkd0123456789', // Debe coincidir con el valor de Key del entorno de pruebas
+    'Key' => 'qwertyasdf0123456789', // Debe coincidir con el valor de Key del entorno de pruebas
 
     ....
 ));
