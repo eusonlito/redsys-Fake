@@ -15,7 +15,6 @@
 
         <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootswatch/3.2.0/united/bootstrap.min.css" />
         <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css" />
-        <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Press+Start+2P" />
     </head>
 
     <body>
