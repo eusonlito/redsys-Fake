@@ -92,7 +92,7 @@ class Fake
 
         $msg = $this->messages[$message['msg']];
 
-        $this->setError(sprintf('[%s] %s [%s %s]', $message['code'], $message['message'], $message['msg'], $msg));
+        $this->setError(sprintf('[%s] %s [%s - %s]', $message['code'], $message['message'], $message['msg'], $msg['message']));
     }
 
     private function setError($msg, $throw = true)
@@ -149,11 +149,12 @@ class Fake
         }
 
         $Curl = new Curl(array(
-            'debug' => true,
             'base' => $_POST['Ds_Merchant_MerchantURL']
         ));
 
-        if ($auth = $this->getOption('basic_auth') && $auth['user'] && $auth['password']) {
+        $auth = $this->getOption('basic_auth');
+
+        if (isset($auth['user']) && isset($auth['password'])) {
             $Curl->setHeader(CURLOPT_USERPWD, $auth['user'].':'.$auth['password']);
         }
 
@@ -182,6 +183,8 @@ class Fake
         }
 
         $Curl->post('', array(), $post);
+
+        sleep(1);
 
         die(header('Location: '.$Merchant_Url));
     }
