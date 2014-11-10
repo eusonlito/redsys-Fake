@@ -20,7 +20,7 @@
     <body>
         <div class="page-header">
             <div class="container">
-                <img src="images/redsys.png" alt="RedSys" />
+                <img src="images/redsys.png" alt="RedSys" class="pull-left" />
                 <h1 class="pull-right">Redsys Fake Server</h1>
             </div>
         </div>
@@ -28,6 +28,17 @@
         <div class="container">
             <?php require __DIR__.'/response.php'; ?>
         </div>
+
+        <footer>
+            <div class="container">
+                <div class="well text-center">
+                    <a href="https://github.com/eusonlito/redsys-Fake" class="text-muted" target="_blank">
+                        <i class="fa fa-github"></i>
+                        <?= _('Check redsys-Fake updates on Github'); ?>
+                    </a>
+                </div>
+            </div>
+        </footer>
 
         <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
         <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
