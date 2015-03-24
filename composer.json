@@ -10,12 +10,14 @@
         }
     ],
     "require": {
-        "php": ">=5.3"
+        "php": ">=5.3",
+	"redsys/messages": "1.*"
     },
     "autoload": {
         "psr-4": {
             "Redsys\\Fake\\": "src/Redsys/Fake/"
         }
     },
+
     "minimum-stability": "stable"
 }

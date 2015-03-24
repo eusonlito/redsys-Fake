@@ -1,5 +1,5 @@
 <?php
-require __DIR__.'/../src/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
 $config = __DIR__.'/../config';
 $config .= (is_file($config.'.local.php') ? '.local' : '').'.php';

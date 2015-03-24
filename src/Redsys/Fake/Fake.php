@@ -2,11 +2,11 @@
 namespace Redsys\Fake;
 
 use Exception;
+use Redsys\Messages\Messages;
 
 class Fake
 {
     private $options = array();
-    private $messages = array();
 
     private $signature_fields_check = array('Amount', 'Order', 'MerchantCode', 'Currency', 'TransactionType', 'MerchantURL');
     private $signature_fields_new = array('Amount', 'Order', 'MerchantCode', 'Currency', 'Response');
@@ -19,7 +19,6 @@ class Fake
     public function __construct(array $options)
     {
         $this->setOption($options);
-        $this->loadMessages();
 
         return $this;
     }
@@ -58,14 +57,10 @@ class Fake
     public function getMessages($exp = '')
     {
         if (empty($exp)) {
-            return $this->messages;
+            return Messages::getAll();
         }
 
-        $exp = str_replace('/', '\\/', $exp);
-
-        return array_filter($this->messages, function ($value) use ($exp) {
-            return preg_match('/'.$exp.'/', $value['code']);
-        });
+        return Messages::getByExp($exp);
     }
 
     public function getSuccess()
@@ -73,24 +68,15 @@ class Fake
         return $this->success;
     }
 
-    private function loadMessages()
-    {
-        $files = glob(__DIR__.'/Messages/*.php');
-
-        foreach ($files as $file) {
-            $this->messages = array_merge($this->messages, require $file);
-        }
-
-        return $this;
-    }
-
     private function setErrorCode($code)
     {
-        if (empty($message = $this->messages[$code])) {
+        $message = Messages::getByCode($code);
+
+        if (empty($message)) {
             throw new Exception(sprintf('Error code <strong>%s</strong> not defined', $code));
         }
 
-        $msg = $this->messages[$message['msg']];
+        $msg = Messages::getByCode($message['msg']);
 
         $this->setError(sprintf('[%s] %s [%s - %s]', $message['code'], $message['message'], $message['msg'], $msg['message']));
     }

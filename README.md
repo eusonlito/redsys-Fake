@@ -9,6 +9,10 @@ Instala la aplicación en un directorio accesible vía web. Te recomiendo crear 
 
 ```bash
 git clone https://github.com/eusonlito/redsys-Fake.git /var/www/redsys-fake
+
+cd redsys-fake
+
+composer update
 ```
 
 Configura el acceso en Apache o Nginx
