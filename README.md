@@ -1,3 +1,5 @@
+# DISCONTINUED - Debido al cambio de cifrado a SHA256 esta librería ha quedado obsoleta.
+
 Redsys Fake
 =====
 
