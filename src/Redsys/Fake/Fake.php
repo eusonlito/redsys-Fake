@@ -8,11 +8,6 @@ class Fake
 {
     private $options = array();
 
-    private $signature_fields_check = array('Amount', 'Order', 'MerchantCode', 'Currency', 'TransactionType', 'MerchantURL');
-    private $signature_fields_new = array('Amount', 'Order', 'MerchantCode', 'Currency', 'Response');
-
-    private $option_prefix = 'Ds_Merchant_';
-
     private $success = '';
     private $error = '';
 
@@ -102,7 +97,8 @@ class Fake
 
         try {
             $this->$path();
-        } catch (Exception $e) {}
+        } catch (Exception $e) {
+        }
 
         return $this;
     }
@@ -128,14 +124,18 @@ class Fake
     private function realizarPagoResponse()
     {
         $success = ($_POST['action'] === 'success');
-        $Merchant_Url = $_POST['Ds_Merchant_Url'.($success ? 'OK' : 'KO')];
 
-        if (empty($_POST['Ds_Merchant_MerchantURL'])) {
+        $values_json = base64_decode($_POST['Ds_MerchantParameters']);
+        $values = json_decode($values_json, true);
+
+        $Merchant_Url = $values['Ds_Merchant_Url'.($success ? 'OK' : 'KO')];
+
+        if (empty($values['Ds_Merchant_MerchantURL'])) {
             die(header('Location: '.$Merchant_Url));
         }
 
         $Curl = new Curl(array(
-            'base' => $_POST['Ds_Merchant_MerchantURL']
+            'base' => $values['Ds_Merchant_MerchantURL']
         ));
 
         $auth = $this->getOption('basic_auth');
@@ -144,23 +144,22 @@ class Fake
             $Curl->setHeader(CURLOPT_USERPWD, $auth['user'].':'.$auth['password']);
         }
 
-        $_POST['Ds_Merchant_Response'] = sprintf('%04d', $_POST['Ds_Response']);
+        $values['Ds_Merchant_Response'] = sprintf('%04d', $_POST['Ds_Response']);
 
         $post = array(
-            'DS_Date' => date('d/m/Y'),
-            'DS_Hour' => date('H:i'),
+            'Ds_Date' => date('d/m/Y'),
+            'Ds_Hour' => date('H:i'),
             'Ds_SecurePayment' => $this->getOption('SecurePayment', '0'),
             'Ds_Card_Country' => $this->getOption('Card_Country', '724'),
-            'Ds_Amount' => $_POST['Ds_Merchant_Amount'],
-            'Ds_Currency' => $_POST['Ds_Merchant_Currency'],
-            'Ds_Order' => $_POST['Ds_Merchant_Order'],
-            'Ds_MerchantCode' => $_POST['Ds_Merchant_MerchantCode'],
-            'Ds_Terminal' => sprintf('%03d', $_POST['Ds_Merchant_Terminal']),
-            'Ds_Signature' => $this->getSignature('new', $_POST),
-            'Ds_Response' => $_POST['Ds_Merchant_Response'],
-            'Ds_MerchantData' => $_POST['Ds_Merchant_MerchantData'],
-            'Ds_TransactionType' => $_POST['Ds_Merchant_TransactionType'],
-            'Ds_ConsumerLanguage' => (int) $_POST['Ds_Merchant_ConsumerLanguage'],
+            'Ds_Amount' => $values['Ds_Merchant_Amount'],
+            'Ds_Currency' => $values['Ds_Merchant_Currency'],
+            'Ds_Order' => $values['Ds_Merchant_Order'],
+            'Ds_MerchantCode' => $values['Ds_Merchant_MerchantCode'],
+            'Ds_Terminal' => sprintf('%03d', $values['Ds_Merchant_Terminal']),
+            'Ds_Response' => $values['Ds_Merchant_Response'],
+            'Ds_MerchantData' => $values['Ds_Merchant_MerchantData'],
+            'Ds_TransactionType' => $values['Ds_Merchant_TransactionType'],
+            'Ds_ConsumerLanguage' => (int) $values['Ds_Merchant_ConsumerLanguage'],
             'Ds_AuthorisationCode' => ($success ? mt_rand(100000, 999999) : '')
         );
 
@@ -168,7 +167,19 @@ class Fake
             $post['Ds_ErrorCode'] = $_POST['Ds_ErrorCode'];
         }
 
-        $Curl->post('', array(), $post);
+        if ($values['Ds_Merchant_Identifier'] == 'REQUIRED') {
+            $post['Ds_Merchant_Identifier'] = $this->generateRandomIdentifier();
+            $post['Ds_Card_Number'] = mt_rand(1000, 9999).'********'.mt_rand(1000, 9999);
+            $post['Ds_Card_Brand'] = mt_rand(1, 3);
+            $post['Ds_ExpiryDate'] = mt_rand(20, 30).str_pad(mt_rand(1, 12), 2, '0', STR_PAD_LEFT);
+        }
+
+        $to_post = array();
+        $to_post['Ds_MerchantParameters'] = base64_encode(json_encode($post));
+        $to_post['Ds_SignatureVersion'] = $_POST['Ds_SignatureVersion'];
+        $to_post['Ds_Signature'] = $this->getSignature('new', $post);
+
+        $Curl->post('', array(), $to_post);
 
         sleep(1);
 
@@ -178,11 +189,14 @@ class Fake
     private function getSignature($type, $values)
     {
         if (!in_array($type, array('check', 'new'), true)) {
-            $this->setError(sprintf('Signature type <strong>%s</strong> is not valid', $type));
+              $this->setError(sprintf('Signature type <strong>%s</strong> is not valid', $type));
         }
 
-        $fields = ($type === 'check') ? $this->signature_fields_check : $this->signature_fields_new;
-        $prefix = $this->option_prefix;
+        if ($type == 'check') {
+            $prefix = 'Ds_Merchant_';
+        } else {
+            $prefix = 'Ds_';
+        }
 
         if (empty($values[$prefix.'Amount'])) {
             $this->setErrorCode('SIS0018');
@@ -196,25 +210,55 @@ class Fake
             $this->setErrorCode('SIS0023');
         }
 
-        $key = '';
+        $array_json = json_encode($values);
+        $array_base = base64_encode($array_json);
 
-        foreach ($fields as $field) {
-            $key .= $values[$prefix.$field];
+        $order = $values[$prefix.'Order'];
+
+        $key = $this->encrypt3DESOpenSSL($order, base64_decode($this->options['Key']));
+
+        $signature = base64_encode(hash_hmac('sha256', $array_base, $key, true));
+
+        if ($type == 'new') {
+            $signature = strtr($signature, '+/', '-_');
         }
 
-        return strtoupper(sha1($key.$this->options['Key']));
+        return $signature;
     }
 
     private function checkSignature($data)
     {
-        $field = $this->option_prefix.'MerchantSignature';
+        $field = 'Ds_Signature';
 
         if (empty($data[$field])) {
             return $this->setErrorCode('SIS0020');
         }
 
-        $signature = $this->getSignature('check', $data);
+        $values_json = base64_decode($data['Ds_MerchantParameters']);
+        $values = json_decode($values_json, true);
+
+        $signature = $this->getSignature('check', $values);
 
         return ($signature === $data[$field]);
+    }
+
+    private function encrypt3DESOpenSSL($message, $key)
+    {
+        $l = ceil(strlen($message) / 8) * 8;
+        $message = $message.str_repeat("\0", $l - strlen($message));
+
+        return substr(openssl_encrypt($message, 'des-ede3-cbc', $key, OPENSSL_RAW_DATA, "\0\0\0\0\0\0\0\0"), 0, $l);
+    }
+
+    private function generateRandomIdentifier()
+    {
+        $length = 40;
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyz';
+        $charactersLength = strlen($characters);
+        $randomString = '';
+        for ($i = 0; $i < $length; $i++) {
+            $randomString .= $characters[rand(0, $charactersLength - 1)];
+        }
+        return $randomString;
     }
 }

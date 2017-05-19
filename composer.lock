@@ -1,11 +1,55 @@
 {
     "_readme": [
         "This file locks the dependencies of your project to a known state",
-        "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "5de189fabe59d2b3006da95bde5758e3",
-    "packages": [],
+    "content-hash": "54ec8f87886d05cb4f567ff53d2cf8df",
+    "packages": [
+        {
+            "name": "redsys/messages",
+            "version": "v1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/eusonlito/redsys-Messages.git",
+                "reference": "3d8a3cffb081c48137ef8c1301c02e5b9534a0fa"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/eusonlito/redsys-Messages/zipball/3d8a3cffb081c48137ef8c1301c02e5b9534a0fa",
+                "reference": "3d8a3cffb081c48137ef8c1301c02e5b9534a0fa",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Redsys\\Messages\\": "./"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Lito",
+                    "email": "lito@eordes.com"
+                }
+            ],
+            "description": "Redsys/Sermepa/Servired TPV Messages lists",
+            "keywords": [
+                "messages",
+                "redsys",
+                "sermepa",
+                "servired",
+                "tpv"
+            ],
+            "time": "2016-10-04T08:16:20+00:00"
+        }
+    ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",

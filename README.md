@@ -1,5 +1,3 @@
-# DISCONTINUED - Debido al cambio de cifrado a SHA256 esta librería ha quedado obsoleta.
-
 Redsys Fake
 =====
 
@@ -48,7 +46,7 @@ Configura el fichero con los parámetros necesarios:
 ```php
 return array(
     // Signature Key
-    'Key' => 'qwertyasdf0123456789',
+    'Key' => 'sq7HjrUOBfKmC576ILgskD5srU870gJ7',
 
     // Basic auth to attach to Ds_Merchant_MerchantURL response if your environment is protected
     'basic_auth' => array(
@@ -71,7 +69,7 @@ $TPV = new Redsys\Tpv\Tpv(array(
     ),
 
     'Environment' => 'local',
-    'Key' => 'qwertyasdf0123456789', // Debe coincidir con el valor de Key del entorno de pruebas
+    'Key' => 'sq7HjrUOBfKmC576ILgskD5srU870gJ7', // Debe coincidir con el valor de Key del entorno de pruebas
 
     ....
 ));
