@@ -8,8 +8,6 @@ class Fake
 {
     private $options = array();
 
-    private $option_prefix = 'Ds_Merchant_';
-
     private $success = '';
     private $error = '';
 
@@ -99,7 +97,8 @@ class Fake
 
         try {
             $this->$path();
-        } catch (Exception $e) {}
+        } catch (Exception $e) {
+        }
 
         return $this;
     }
@@ -148,8 +147,8 @@ class Fake
         $values['Ds_Merchant_Response'] = sprintf('%04d', $_POST['Ds_Response']);
 
         $post = array(
-            'DS_Date' => date('d/m/Y'),
-            'DS_Hour' => date('H:i'),
+            'Ds_Date' => date('d/m/Y'),
+            'Ds_Hour' => date('H:i'),
             'Ds_SecurePayment' => $this->getOption('SecurePayment', '0'),
             'Ds_Card_Country' => $this->getOption('Card_Country', '724'),
             'Ds_Amount' => $values['Ds_Merchant_Amount'],
@@ -168,11 +167,17 @@ class Fake
             $post['Ds_ErrorCode'] = $_POST['Ds_ErrorCode'];
         }
 
+        if ($values['Ds_Merchant_Identifier'] == 'REQUIRED') {
+            $post['Ds_Merchant_Identifier'] = $this->generateRandomIdentifier();
+            $post['Ds_Card_Number'] = mt_rand(1000, 9999).'********'.mt_rand(1000, 9999);
+            $post['Ds_Card_Brand'] = mt_rand(1, 3);
+            $post['Ds_ExpiryDate'] = mt_rand(20, 30).str_pad(mt_rand(1, 12), 2, '0', STR_PAD_LEFT);
+        }
 
         $to_post = array();
         $to_post['Ds_MerchantParameters'] = base64_encode(json_encode($post));
         $to_post['Ds_SignatureVersion'] = $_POST['Ds_SignatureVersion'];
-        $to_post['Ds_Signature'] = $_POST['Ds_Signature'];
+        $to_post['Ds_Signature'] = $this->getSignature('new', $post);
 
         $Curl->post('', array(), $to_post);
 
@@ -184,13 +189,14 @@ class Fake
     private function getSignature($type, $values)
     {
         if (!in_array($type, array('check', 'new'), true)) {
-            $this->setError(sprintf('Signature type <strong>%s</strong> is not valid', $type));
+              $this->setError(sprintf('Signature type <strong>%s</strong> is not valid', $type));
         }
 
-        $prefix = $this->option_prefix;
-
-        $values_json = base64_decode($values['Ds_MerchantParameters']);
-        $values = json_decode($values_json, true);
+        if ($type == 'check') {
+            $prefix = 'Ds_Merchant_';
+        } else {
+            $prefix = 'Ds_';
+        }
 
         if (empty($values[$prefix.'Amount'])) {
             $this->setErrorCode('SIS0018');
@@ -211,7 +217,13 @@ class Fake
 
         $key = $this->encrypt3DESOpenSSL($order, base64_decode($this->options['Key']));
 
-        return base64_encode(hash_hmac('sha256', $array_base, $key, true));
+        $signature = base64_encode(hash_hmac('sha256', $array_base, $key, true));
+
+        if ($type == 'new') {
+            $signature = strtr($signature, '+/', '-_');
+        }
+
+        return $signature;
     }
 
     private function checkSignature($data)
@@ -222,7 +234,10 @@ class Fake
             return $this->setErrorCode('SIS0020');
         }
 
-        $signature = $this->getSignature('check', $data);
+        $values_json = base64_decode($data['Ds_MerchantParameters']);
+        $values = json_decode($values_json, true);
+
+        $signature = $this->getSignature('check', $values);
 
         return ($signature === $data[$field]);
     }
@@ -233,5 +248,17 @@ class Fake
         $message = $message.str_repeat("\0", $l - strlen($message));
 
         return substr(openssl_encrypt($message, 'des-ede3-cbc', $key, OPENSSL_RAW_DATA, "\0\0\0\0\0\0\0\0"), 0, $l);
+    }
+
+    private function generateRandomIdentifier()
+    {
+        $length = 40;
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyz';
+        $charactersLength = strlen($characters);
+        $randomString = '';
+        for ($i = 0; $i < $length; $i++) {
+            $randomString .= $characters[rand(0, $charactersLength - 1)];
+        }
+        return $randomString;
     }
 }
