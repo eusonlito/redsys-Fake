@@ -167,7 +167,7 @@ class Fake
             $post['Ds_ErrorCode'] = $_POST['Ds_ErrorCode'];
         }
 
-        if ($values['Ds_Merchant_Identifier'] == 'REQUIRED') {
+        if (array_key_exists('Ds_Merchant_Identifier', $values) && $values['Ds_Merchant_Identifier'] == 'REQUIRED') {
             $post['Ds_Merchant_Identifier'] = $this->generateRandomIdentifier();
             $post['Ds_Card_Number'] = mt_rand(1000, 9999).'********'.mt_rand(1000, 9999);
             $post['Ds_Card_Brand'] = mt_rand(1, 3);
@@ -189,7 +189,7 @@ class Fake
     private function getSignature($type, $values)
     {
         if (!in_array($type, array('check', 'new'), true)) {
-              $this->setError(sprintf('Signature type <strong>%s</strong> is not valid', $type));
+            $this->setError(sprintf('Signature type <strong>%s</strong> is not valid', $type));
         }
 
         if ($type == 'check') {
