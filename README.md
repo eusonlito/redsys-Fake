@@ -56,7 +56,17 @@ return array(
 );
 ```
 
-## Docker
+## Docker utilizando la imagen publicada en DockerHub
+La forma más sencilla de poner el proyecto en marcha es con la imagen publicada en GitHub. Si ya tienes docker instalado, basta con ejecutar el siguiente comando:
+
+```bash
+docker run -p 8000:80 -e KEY=sq7HjrUOBfKmC576ILgskD5srU870gJ7 bernatvadell/redsys-fake
+```
+
+Y ya puedes configurar tu TPV virtual para enviar el post de redsys al endpoint:
+http://localhost:8000
+
+## Docker generando la imagen
 
 Ejecuta la compilación de la imagen:
 ```bash
