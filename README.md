@@ -56,6 +56,18 @@ return array(
 );
 ```
 
+## Docker
+
+Ejecuta la compilación de la imagen:
+```bash
+docker build -t redsys-fake .
+```
+
+Arranca el contenedor:
+```bash
+docker run -p 8000:80 -e KEY=sq7HjrUOBfKmC576ILgskD5srU870gJ7 redsys-fake
+```
+
 Ahora ya puedes enviar las peticiones a eses entorno como si fuera el entorno real.
 
 ## Configuración de la librería Redsys/TPV
