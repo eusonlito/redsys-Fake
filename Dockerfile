@@ -7,7 +7,7 @@ RUN docker-php-ext-install gettext
 
 COPY public/ /var/www/html/
 COPY src/ /var/www/src/
-COPY config.php /var/www/config.php
+COPY config.docker.php /var/www/config.php
 COPY composer.json /var/www/composer.json
 COPY composer.lock /var/www/composer.lock
 
